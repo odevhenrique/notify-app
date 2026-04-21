@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database.connection import Base, engine
-from app.routes import auth
+from app.routes import auth, expense
 
 app = FastAPI(
     title="Controle de Despesas API",
@@ -12,6 +12,7 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
+app.include_router(expense.router, prefix="/expenses", tags=["Expenses"])
 
 # Rota básica (teste)
 @app.get('/')

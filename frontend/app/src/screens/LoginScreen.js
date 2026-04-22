@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -46,13 +47,7 @@ export default function LoginScreen({ navigation }) {
       >
         {/* Logo */}
         <View style={styles.logoArea}>
-          <View style={styles.logoCircle}>
-            <Ionicons
-              name="notifications-circle-sharp"
-              size={50}
-              color="white"
-            />
-          </View>
+          <Image source={require('../../assets/logo.png')} style={styles.logo}/>
           <Text style={styles.appName}>Notify Home</Text>
           <Text style={styles.appSub}>Controle de despesas domésticas</Text>
         </View>
@@ -111,18 +106,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
   },
+  logo: {
+    width: 100,
+    height: 100
+  },
   logoArea: {
     alignItems: "center",
     marginBottom: 40,
-  },
-  logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#1D9E75",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
   },
   logoIcon: {
     fontSize: 28,

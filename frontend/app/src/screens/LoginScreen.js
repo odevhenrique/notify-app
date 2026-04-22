@@ -30,9 +30,9 @@ export default function LoginScreen({ navigation }) {
 
     try {
       await login(email, senha);
-      alert("Login efetuado com sucesso!");
+      navigation.replace('Dashboard')
     } catch (error) {
-      setErro(error.message);
+      setErro(error.message || "Erro ao fazer login");
     } finally {
       setLoading(false);
     }

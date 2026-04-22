@@ -1,12 +1,21 @@
 {
+  "cli": {
+    "appVersionSource": "local"
+  },
   "expo": {
-    "name": "app",
+    "name": "Notify Home",
     "slug": "app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/0c9bda33-d3b5-4470-ba57-8524acf0f741"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -20,10 +29,19 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "icon": "./assets/icon.png",
+      "edgeToEdgeEnabled": true,
+      "package": "com.odevhenrique.notifyapp",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0c9bda33-d3b5-4470-ba57-8524acf0f741"
+      }
+    },
+    "owner": "mrpolar777"
   }
 }

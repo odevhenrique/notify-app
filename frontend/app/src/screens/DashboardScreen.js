@@ -49,7 +49,7 @@ export default function DashboardScreen({ navigation }) {
   }, []);
 
   function getStatus(despesa) {
-    if (despesa.paid) return "Paga";
+    if (despesa.is_paid) return "Paga";
     const hoje = new Date();
     const vencimento = new Date(despesa.due_date);
     if (vencimento < hoje) return "Atrasada";
@@ -65,19 +65,20 @@ export default function DashboardScreen({ navigation }) {
 
   function totalPendente() {
     return despesas
-      .filter((d) => !d.paid)
+      .filter((d) => !d.is_paid)
       .reduce((acc, d) => acc + d.amount, 0)
       .toFixed(2);
   }
 
   function totalPago() {
     return despesas
-      .filter((d) => d.paid)
+      .filter((d) => d.is_paid)
       .reduce((acc, d) => acc + d.amount, 0)
       .toFixed(2);
   }
 
   async function handlePagar(id) {
+    console.log('ID da despesa:', id)
     Alert.alert("Confirmar", "Marcar despesa como paga?", [
       { text: "Cancelar", style: "cancel" },
       {
@@ -119,6 +120,7 @@ export default function DashboardScreen({ navigation }) {
   }
 
   function renderDespesa({ item }) {
+    console.log('Despesa:', JSON.stringify(item))
     const status = getStatus(item);
     const cores = badgeColor(status);
     const vencimento = new Date(item.due_date).toLocaleDateString("pt-BR");
@@ -140,7 +142,7 @@ export default function DashboardScreen({ navigation }) {
               R$ {Number(item.amount).toFixed(2)}
             </Text>
             <View style={styles.acoes}>
-              {!item.paid && (
+              {!item.is_paid && (
                 <TouchableOpacity
                   onPress={() => handlePagar(item.id)}
                   style={styles.btnAcao}

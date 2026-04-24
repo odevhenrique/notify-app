@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { criarDespesa } from '../services/api';
+import { agendarNotificacaoDespesa } from '../services/notifications';
 
 export default function NovaDespesaScreen({ navigation, route }) {
   const [title, setTitle] = useState('');
@@ -45,7 +46,8 @@ export default function NovaDespesaScreen({ navigation, route }) {
 
     setLoading(true);
     try {
-      await criarDespesa(title, parseFloat(amount.replace(',', '.')), converterData(dueDate));
+      const despesa = await criarDespesa(title, parseFloat(amount.replace(',', '.')), converterData(dueDate));
+      await agendarNotificacaoDespesa(despesa)
       route.params?.onSave?.();
       navigation.goBack();
     } catch (error) {

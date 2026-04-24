@@ -22,7 +22,7 @@ export async function agendarNotificacaoDespesa(despesa) {
     const horario = await AsyncStorage.getItem('notif_horario') || '08:00'
     const [hora, minuto] = horario.split(':').map(Number)
 
-    const vencimento = new Date(despesa.due_data)
+    const vencimento = new Date(despesa.due_date)
     const dataNotificacao = new Date(vencimento)
     dataNotificacao.setDate(dataNotificacao.getDate() - diasAntes)
     dataNotificacao.setHours(hora, minuto, 0, 0)

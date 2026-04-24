@@ -14,32 +14,39 @@ export async function pedirPermissao() {
     return status === 'granted'
 }
 
-export async function agendarNotificacaoDespesa(despesa) {
-    const permissao = await pedirPermissao()
-    if (!permissao) return
+export async function agendarNotificacaoDespesa(despesa, horarioEspecifico = null) {
+  const permissao = await pedirPermissao();
+  if (!permissao) return;
 
-    const diasAntes = parseInt(await AsyncStorage.getItem('notif_dias') || '2')
-    const horario = await AsyncStorage.getItem('notif_horario') || '08:00'
-    const [hora, minuto] = horario.split(':').map(Number)
+  let hora, minuto;
+  if (horarioEspecifico) {
+    [hora, minuto] = horarioEspecifico.split(':').map(Number);
+  } else {
+    const horarioConfig = await AsyncStorage.getItem('notif_horario') || '08:00';
+    [hora, minuto] = horarioConfig.split(':').map(Number);
+  }
 
-    const vencimento = new Date(despesa.due_date)
-    const dataNotificacao = new Date(vencimento)
-    dataNotificacao.setDate(dataNotificacao.getDate() - diasAntes)
-    dataNotificacao.setHours(hora, minuto, 0, 0)
+  const diasAntes = parseInt(await AsyncStorage.getItem('notif_dias') || '2');
 
-    if (dataNotificacao <= new Date()) return
+  const [ano, mes, dia] = despesa.due_date.split('T')[0].split('-');
+  const vencimento = new Date(ano, mes - 1, dia);
+  const dataNotificacao = new Date(vencimento);
+  dataNotificacao.setDate(dataNotificacao.getDate() - diasAntes);
+  dataNotificacao.setHours(hora, minuto, 0, 0);
 
-    await Notifications.scheduleNotificationAsync({
-        content: {
-            title: 'Despesa próxima do vencimento!',
-            body: `${despesa.title} vence em ${diasAntes} dia(s). Valor: ${Number(despesa.amount).toFixed(2)}`,
-            data: { despesaId: despesa.id },
-        },
-        trigger: {
-            type: 'date',
-            date: dataNotificacao,
-        }
-    })
+  if (dataNotificacao <= new Date()) return;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '💰 Despesa próxima do vencimento!',
+      body: `${despesa.title} vence em ${diasAntes} dia(s). Valor: R$ ${Number(despesa.amount).toFixed(2)}`,
+      data: { despesaId: despesa.id },
+    },
+    trigger: {
+      type: 'date',
+      date: dataNotificacao,
+    },
+  });
 }
 
 export async function cancelarNotificacaoDespesa(despesaId) {

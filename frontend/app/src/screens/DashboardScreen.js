@@ -51,7 +51,9 @@ export default function DashboardScreen({ navigation }) {
   function getStatus(despesa) {
     if (despesa.is_paid) return "Paga";
     const hoje = new Date();
-    const vencimento = new Date(despesa.due_date);
+    hoje.setHours(0, 0, 0, 0)
+    const [ano, mes, dia] = despesa.due_date.split('T')[0].split('-')
+    const vencimento = new Date(ano, mes - 1,dia);
     if (vencimento < hoje) return "Atrasada";
     return "Pendente";
   }
@@ -120,10 +122,10 @@ export default function DashboardScreen({ navigation }) {
   }
 
   function renderDespesa({ item }) {
-    console.log('Despesa:', JSON.stringify(item))
     const status = getStatus(item);
     const cores = badgeColor(status);
-    const vencimento = new Date(item.due_date).toLocaleDateString("pt-BR");
+    const [ano, mes, dia] = item.due_date.split('T')[0].split('-')
+    const vencimento = new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
 
     return (
       <View style={styles.card}>

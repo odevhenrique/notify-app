@@ -36,6 +36,7 @@ export async function agendarNotificacaoDespesa(despesa) {
             data: { despesaId: despesa.id },
         },
         trigger: {
+            type: 'date',
             date: dataNotificacao,
         }
     })
@@ -60,7 +61,9 @@ export async function testarNotificacao() {
       body: 'As notificações do Notify Home estão funcionando!',
     },
     trigger: {
+      type: 'timeInterval',  
       seconds: 10,
+      repeats: false,
     },
   });
 }

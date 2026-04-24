@@ -69,8 +69,15 @@ export default function PerfilScreen({ navigation }) {
         <TouchableOpacity
   style={styles.menuItem}
   onPress={async () => {
+    console.log('Botão de teste clicado');
+  try {
     await testarNotificacao();
-    Alert.alert('Agendado!', 'Feche o app e aguarde 10 segundos — a notificação vai aparecer!');
+    console.log('Notificação agendada!');
+    Alert.alert('✅ Agendado!', 'Feche o app e aguarde 10 segundos — a notificação vai aparecer!');
+  } catch (error) {
+    console.log('Erro:', error.message);
+    Alert.alert('Erro', error.message);
+  }
   }}
 >
   <View style={styles.menuLeft}>

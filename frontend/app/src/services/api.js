@@ -122,3 +122,11 @@ export async function deletarDespesa(id) {
 
     return true
 }
+
+export async function acordarApi() {
+  try {
+    await fetch(`${BASE_URL}/health`, { method: 'GET' });
+  } catch {
+    // silencioso — só acorda a API
+  }
+}

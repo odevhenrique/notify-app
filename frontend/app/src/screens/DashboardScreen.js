@@ -22,10 +22,12 @@ import {
   uploadComprovante,
   getComprovante,
 } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const FILTROS = ["Todas", "Pendentes", "Pagas", "Atrasadas"];
 
 export default function DashboardScreen({ navigation }) {
+  const { logout } = useAuth();
   const [despesas, setDespesas] = useState([]);
   const [filtro, setFiltro] = useState("Todas");
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,10 @@ export default function DashboardScreen({ navigation }) {
       const data = await getDespesas();
       setDespesas(data);
     } catch (error) {
+      if (error.message === 'SESSAO_EXPIRADA') {
+        await logout();
+        return;
+      }
       Alert.alert("Erro", error.message);
     } finally {
       setLoading(false);

@@ -66,13 +66,19 @@ export async function criarDespesa(title, amount, due_date) {
 export async function getDespesas(){
     const token = await getToken()
 
-    const response = await fetch(`${BASE_URL}/expenses`, {
+    const response = await fetch(`${BASE_URL}/expenses/`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
     })
+
+    if (response.status === 401) {
+        await AsyncStorage.removeItem('token')
+        await AsyncStorage.removeItem('email')
+        throw new Error('SESSAO_EXPIRADA')
+    }
 
     const data = await response.json()
 
@@ -142,7 +148,7 @@ export async function uploadComprovante(expenseId, arquivo) {
         type: arquivo.mimetype || 'image/jpeg',
     })
 
-    const response = await fetch(`${BASE_URL}/receipt`, {
+    const response = await fetch(`${BASE_URL}/upload/receipt`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,

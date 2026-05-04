@@ -12,7 +12,7 @@ class Expense(Base):
 
     is_paid = Column(Boolean, default=False)
     payment_date = Column(Date, nullable=True)
-    receipt = Column(String, nullable=True)
+    receipt_url = Column(String, nullable=True)
 
     user_id = Column(Integer, ForeignKey("users.id"))
 

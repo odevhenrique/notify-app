@@ -80,7 +80,10 @@ export async function getDespesas(){
         throw new Error('SESSAO_EXPIRADA')
     }
 
-    const data = await response.json()
+    const raw = await response.text()
+    console.log('RAW RESPONSE /expenses/:', response.status, raw)
+
+    const data = JSON.parse(raw)
 
     if (!response.ok) {
         throw new Error(data.detail || 'Erro ao buscar despensas')

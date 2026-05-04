@@ -66,7 +66,7 @@ export async function criarDespesa(title, amount, due_date) {
 export async function getDespesas(){
     const token = await getToken()
 
-    const response = await fetch(`${BASE_URL}/expenses/`, {
+    const response = await fetch(`${BASE_URL}/expenses`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -129,4 +129,52 @@ export async function acordarApi() {
   } catch {
     // silencioso — só acorda a API
   }
+}
+
+export async function uploadComprovante(expenseId, arquivo) {
+    const token = await getToken()
+
+    const formData = new FormData()
+    formData.append('expense_id', String(expenseId))
+    formData.append('file', {
+        uri: arquivo.uri,
+        name: arquivo.fileName || 'comprovante.jpg',
+        type: arquivo.mimetype || 'image/jpeg',
+    })
+
+    const response = await fetch(`${BASE_URL}/receipt`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        throw new Error(data.detail || "Erro ao anexar o comprovante")
+    }
+
+    return data
+}
+
+export async function getComprovante(expenseId) {
+    const token = await getToken()
+
+    const response = await fetch(`${BASE_URL}/upload/${expenseId}/receipt`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        throw new Error(data.detail || "Comprovante não encontrado")
+    }
+
+    return data
 }

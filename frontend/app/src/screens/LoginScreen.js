@@ -13,8 +13,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { login } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginScreen({ navigation }) {
+  const { setLogado } = useAuth()
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [email, setEmail] = useState("");
@@ -31,7 +33,7 @@ export default function LoginScreen({ navigation }) {
 
     try {
       await login(email, senha);
-      navigation.replace('Dashboard')
+      setLogado(true)
     } catch (error) {
       setErro(error.message || "Erro ao fazer login");
     } finally {

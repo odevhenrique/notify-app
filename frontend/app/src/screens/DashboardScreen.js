@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -9,6 +10,7 @@ import {
   RefreshControl,
   Alert,
   Image,
+  Modal,
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +19,8 @@ import {
   getDespesas,
   pagarDespesa,
   deletarDespesa,
+  uploadComprovante,
+  getComprovante,
 } from "../services/api";
 
 const FILTROS = ["Todas", "Pendentes", "Pagas", "Atrasadas"];
@@ -26,6 +30,10 @@ export default function DashboardScreen({ navigation }) {
   const [filtro, setFiltro] = useState("Todas");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisivel, setModalVisivel] = useState(false);
+  const [despesaSelecionada, setDespesaSelecionada] = useState(null);
+  const [comprovante, setComprovante] = useState(null);
+  const [uploadando, setUploadando] = useState(false);
 
   async function carregarDespesas() {
     try {
@@ -51,9 +59,9 @@ export default function DashboardScreen({ navigation }) {
   function getStatus(despesa) {
     if (despesa.is_paid) return "Paga";
     const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0)
-    const [ano, mes, dia] = despesa.due_date.split('T')[0].split('-')
-    const vencimento = new Date(ano, mes - 1,dia);
+    hoje.setHours(0, 0, 0, 0);
+    const [ano, mes, dia] = despesa.due_date.split("T")[0].split("-");
+    const vencimento = new Date(ano, mes - 1, dia);
     if (vencimento < hoje) return "Atrasada";
     return "Pendente";
   }
@@ -80,7 +88,7 @@ export default function DashboardScreen({ navigation }) {
   }
 
   async function handlePagar(id) {
-    console.log('ID da despesa:', id)
+    console.log("ID da despesa:", id);
     Alert.alert("Confirmar", "Marcar despesa como paga?", [
       { text: "Cancelar", style: "cancel" },
       {
@@ -124,11 +132,11 @@ export default function DashboardScreen({ navigation }) {
   function renderDespesa({ item }) {
     const status = getStatus(item);
     const cores = badgeColor(status);
-    const [ano, mes, dia] = item.due_date.split('T')[0].split('-')
-    const vencimento = new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
+    const [ano, mes, dia] = item.due_date.split("T")[0].split("-");
+    const vencimento = new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR");
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={() => handleAbrirModal(item)}>
         <View style={styles.cardRow}>
           <View style={styles.cardLeft}>
             <Text style={styles.cardTitulo}>{item.title}</Text>
@@ -165,8 +173,46 @@ export default function DashboardScreen({ navigation }) {
             </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
+  }
+
+  async function handleAbrirModal(item) {
+    setDespesaSelecionada(item);
+    setComprovante(null);
+    setModalVisivel(true);
+
+    try {
+      const data = await getComprovante(item.id);
+      setComprovante(data.url);
+    } catch {
+      // sem comprovante ainda
+    }
+  }
+
+  async function handleUploadComprovante() {
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (resultado.canceled) return;
+
+    const arquivo = resultado.assets[0];
+    setUploadando(true);
+
+    try {
+      await uploadComprovante(despesaSelecionada.id, arquivo);
+      await pagarDespesa(despesaSelecionada.id);
+      setModalVisivel(false);
+      carregarDespesas();
+      Alert.alert("Sucesso!", "Comprovante anexado e despesa paga!");
+    } catch (error) {
+      Alert.alert("Erro", error.message);
+    } finally {
+      setUploadando(false);
+    }
   }
 
   return (
@@ -253,6 +299,64 @@ export default function DashboardScreen({ navigation }) {
       >
         <Text style={styles.fabTexto}>+ Nova Despesa</Text>
       </TouchableOpacity>
+
+      {/* Modal Comprovante */}
+      <Modal
+        visible={modalVisivel}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisivel(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitulo}>
+                {despesaSelecionada?.title}
+              </Text>
+              <TouchableOpacity onPress={() => setModalVisivel(false)}>
+                <Ionicons name="close" size={24} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalValor}>
+              R$ {Number(despesaSelecionada?.amount || 0).toFixed(2)}
+            </Text>
+
+            {comprovante ? (
+              <View style={styles.comprovanteContainer}>
+                <Image
+                  source={{ uri: comprovante }}
+                  style={styles.comprovanteImagem}
+                  resizeMode="contain"
+                />
+                <Text style={styles.ComprovanteLegenda}>
+                  Comprovante Anexado!
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.semComprovante}>
+                <Ionicons name="document-outline" size={48} color="#ccc" />
+                <Text style={styles.semComprovanteTexto}>
+                  Nenhum comprovante anexado
+                </Text>
+              </View>
+            )}
+
+            {!despesaSelecionada?.is_paid && (
+              <TouchableOpacity
+                style={[styles.btnUpload, uploadando && styles.btnDesativado]}
+                onPress={handleUploadComprovante}
+                disabled={uploadando}
+              >
+                <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+                <Text style={styles.btnUploadTexto}>
+                  {uploadando ? "Enviando..." : "Anexar comprovante e pagar"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
@@ -357,33 +461,103 @@ const styles = StyleSheet.create({
   btnAcao: { padding: 4 },
   vazio: { textAlign: "center", color: "#888", marginTop: 40, fontSize: 14 },
   bottomNav: {
-  flexDirection: 'row',
-  justifyContent: 'space-around',
-  backgroundColor: '#fff',
-  borderTopWidth: 0.5,
-  borderTopColor: '#E0E0E0',
-  paddingVertical: 10,
-  paddingBottom: 50,
-},
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#fff",
+    borderTopWidth: 0.5,
+    borderTopColor: "#E0E0E0",
+    paddingVertical: 10,
+    paddingBottom: 50,
+  },
   navItem: { alignItems: "center", gap: 2 },
   navTexto: { fontSize: 10, color: "#888" },
   fab: {
-  backgroundColor: '#1D9E75',
-  paddingVertical: 14,
-  paddingHorizontal: 24,
-  borderRadius: 30,
-  alignItems: 'center',
-  marginHorizontal: 60,
-  marginBottom: 12,
-  elevation: 4,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-},
+    backgroundColor: "#1D9E75",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    alignItems: "center",
+    marginHorizontal: 60,
+    marginBottom: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
   fabTexto: {
-  color: '#fff',
-  fontSize: 15,
-  fontWeight: '600',
-},
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end'
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitulo: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a'
+  },
+  modalValor: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1d9e75',
+    marginBottom: 20,
+  },
+  semComprovante: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+  semComprovanteTexto: {
+    fontSize: 14,
+    color: '#aaa'
+  },
+  comprovanteContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  comprovanteImagem: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  ComprovanteLegenda: {
+    fontSize: 13,
+    color: '#1d9e75',
+    marginTop: 8,
+  },
+  btnUpload: {
+    backgroundColor: '#1d9e75',
+    borderRadius: 12,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  btnDesativado: {
+    backgroundColor: '#a8d5c4',
+  },
+  btnUploadTexto: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });

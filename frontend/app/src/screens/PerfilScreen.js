@@ -10,9 +10,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { testarNotificacao } from "../services/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "../context/AuthContext";
 
 export default function PerfilScreen({ navigation }) {
   const [email, setEmail] = useState("");
+  const { logout } = useAuth()
 
   useEffect(() => {
     async function carregarEmail() {
@@ -29,9 +31,7 @@ export default function PerfilScreen({ navigation }) {
         text: "Sair",
         style: "destructive",
         onPress: async () => {
-          await AsyncStorage.removeItem("token");
-          await AsyncStorage.removeItem("email");
-          navigation.replace("Login");
+          await logout()
         },
       },
     ]);

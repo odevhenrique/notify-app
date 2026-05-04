@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from 'react-native'
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useAuth } from "../context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoginScreen from "../screens/LoginScreen";
 import DashboardScreen from "../screens/DashboardScreen";
@@ -12,17 +13,7 @@ import ConfiguracoesNotificacaoScreen from "../screens/ConfiguracoesNotificacaoS
 const Stack = createNativeStackNavigator()
 
 export default function AppNavigator(){
-    const [loading, setLoading] = useState(true)
-    const [logado, setLogado] = useState(false)
-
-    useEffect(() => {
-        async function verificarToken() {
-            const token = await AsyncStorage.getItem('token')
-            setLogado(!!token)
-            setLoading(false)
-        }
-        verificarToken()
-    }, [])
+    const { logado, loading } = useAuth()
 
     if (loading) {
         return (

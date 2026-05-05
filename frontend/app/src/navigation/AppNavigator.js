@@ -9,6 +9,7 @@ import DashboardScreen from "../screens/DashboardScreen";
 import NovaDespesaScreen from "../screens/NovaDespesaScreen"
 import PerfilScreen from "../screens/PerfilScreen";
 import ConfiguracoesNotificacaoScreen from "../screens/ConfiguracoesNotificacaoScreen";
+import ArquivadosScreen from "../screens/ArquivadosScreen";
 
 const Stack = createNativeStackNavigator()
 
@@ -32,6 +33,7 @@ export default function AppNavigator(){
                         <Stack.Screen name="NovaDespesa" component={NovaDespesaScreen} />
                         <Stack.Screen name="ConfiguracoesNotificacao" component={ConfiguracoesNotificacaoScreen} />
                         <Stack.Screen name="Perfil" component={PerfilScreen} />
+                        <Stack.Screen name="Arquivados" component={ArquivadosScreen} />
                     </>
                 ) : (
                     <Stack.Screen name="Login" component={LoginScreen}/>

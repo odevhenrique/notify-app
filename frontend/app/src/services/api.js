@@ -131,24 +131,35 @@ export async function deletarDespesa(id) {
     return true
 }
 
-// Login com Google (envia access_token obtido pelo expo-auth-session)
-export async function loginComGoogle(accessToken) {
-    const response = await fetch(`${BASE_URL}/auth/google`, {
+export async function esqueceuSenha(email) {
+    const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ access_token: accessToken }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
     })
 
     const data = await response.json()
 
     if (!response.ok) {
-        throw new Error(data.detail || 'Erro ao fazer login com Google')
+        throw new Error(data.detail || 'Erro ao enviar código')
     }
 
-    await AsyncStorage.setItem('token', data.access_token)
-    if (data.email) await AsyncStorage.setItem('email', data.email)
+    return data
+}
+
+export async function redefinirSenha(email, code, new_password) {
+    const response = await fetch(`${BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, new_password }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        throw new Error(data.detail || 'Erro ao redefinir senha')
+    }
+
     return data
 }
 

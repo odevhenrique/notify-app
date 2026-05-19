@@ -5,9 +5,14 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class GoogleLoginRequest(BaseModel):
-    access_token: str
-
 class ChangePasswordRequest(BaseModel):
     current_password: Optional[str] = None
+    new_password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
     new_password: str

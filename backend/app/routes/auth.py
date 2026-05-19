@@ -1,26 +1,19 @@
 import os
-import asyncio
 import secrets
 import string
-import httpx
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from app.database.connection import get_db
-from app.schemas.user import GoogleLoginRequest, ChangePasswordRequest
+from app.schemas.user import ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest
 from sqlalchemy.orm import Session
 from app.models.user import User
-from app.models.allowed_email import AllowedEmail
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
-from app.core.email import send_email, email_boas_vindas
+from app.core.email import send_email, email_reset_senha
 
 router = APIRouter()
-
-
-def _gerar_senha(length: int = 12) -> str:
-    alphabet = string.ascii_letters + string.digits + "!@#$"
-    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 @router.post("/login")
@@ -44,80 +37,57 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
     }
 
 
-@router.post("/google")
+@router.post("/forgot-password")
+@limiter.limit("3/minute")
+def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == body.email).first()
+
+    # Resposta genérica para não revelar se o email existe
+    resposta = {"message": "Se o email estiver cadastrado, você receberá um código em breve."}
+
+    if not user or not user.is_active:
+        return resposta
+
+    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    user.reset_code = code
+    user.reset_code_expires = datetime.utcnow() + timedelta(minutes=15)
+    db.commit()
+
+    try:
+        send_email(
+            user.email,
+            "Notify Home — Código de recuperação de senha",
+            email_reset_senha(user.name or "Usuário", code),
+        )
+    except Exception:
+        pass
+
+    return resposta
+
+
+@router.post("/reset-password")
 @limiter.limit("5/minute")
-async def google_login(request: Request, token_data: GoogleLoginRequest, db: Session = Depends(get_db)):
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(
-            "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {token_data.access_token}"},
-        )
+def reset_password(request: Request, body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == body.email).first()
 
-    if resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Token Google inválido")
+    if not user or not user.reset_code:
+        raise HTTPException(status_code=400, detail="Código inválido ou expirado")
 
-    google_data = resp.json()
-    email = google_data.get("email")
-    google_id = google_data.get("sub")
-    name = google_data.get("name") or (email.split("@")[0] if email else "Usuário")
-    email_verified = google_data.get("email_verified", False)
+    if datetime.utcnow() > user.reset_code_expires:
+        raise HTTPException(status_code=400, detail="Código expirado. Solicite um novo.")
 
-    if not email or not email_verified:
-        raise HTTPException(status_code=401, detail="Email Google não verificado")
+    if user.reset_code != body.code:
+        raise HTTPException(status_code=400, detail="Código incorreto")
 
-    admin_email = os.getenv("ADMIN_EMAIL", "")
-    is_admin_email = bool(admin_email) and email == admin_email
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres")
 
-    allowed = db.query(AllowedEmail).filter(AllowedEmail.email == email).first()
-    if not allowed and not is_admin_email:
-        raise HTTPException(
-            status_code=403,
-            detail="Email não autorizado. Solicite acesso ao administrador.",
-        )
+    user.password = hash_password(body.new_password)
+    user.reset_code = None
+    user.reset_code_expires = None
+    db.commit()
 
-    user = db.query(User).filter(User.email == email).first()
-    is_new_user = user is None
-
-    if is_new_user:
-        plain_password = _gerar_senha()
-        user = User(
-            name=name,
-            email=email,
-            google_id=google_id,
-            password=hash_password(plain_password),
-            is_admin=is_admin_email,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-        # Envia email em background — falha silenciosa para não bloquear o login
-        try:
-            await asyncio.to_thread(
-                send_email,
-                email,
-                "Notify Home — sua senha de acesso",
-                email_boas_vindas(name, plain_password),
-            )
-        except Exception:
-            pass
-    else:
-        if not user.google_id:
-            user.google_id = google_id
-            db.commit()
-
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Conta desativada pelo administrador")
-
-    access_token = create_access_token(data={"sub": user.email})
-    return {
-        "message": "Login com Google realizado com sucesso",
-        "access_token": access_token,
-        "token_type": "bearer",
-        "email": user.email,
-        "name": user.name,
-        "is_new_user": is_new_user,
-    }
+    return {"message": "Senha redefinida com sucesso"}
 
 
 @router.put("/change-password")

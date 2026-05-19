@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -9,67 +9,36 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Alert,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import * as AuthSession from "expo-auth-session";
-import { login, loginComGoogle } from "../services/api";
+import { login, esqueceuSenha, redefinirSenha } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-WebBrowser.maybeCompleteAuthSession();
-
-const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen() {
   const { setLogado } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  // Expo Go: usa web client com proxy auth.expo.io
-  // Produção: usa android client com reverse-client-id URI (padrão Google nativo)
-  const authConfig = __DEV__
-    ? {
-        androidClientId: WEB_CLIENT_ID,
-        webClientId: WEB_CLIENT_ID,
-        redirectUri: "https://auth.expo.io/@mrpolar777/app",
-      }
-    : {
-        androidClientId: ANDROID_CLIENT_ID,
-      };
-
-  const [request, response, promptAsync] = Google.useAuthRequest(authConfig);
-
-  useEffect(() => {
-    if (response?.type === "success") {
-      const accessToken = response.authentication?.accessToken;
-      if (accessToken) {
-        handleGoogleLogin(accessToken);
-      } else {
-        setErro("Não foi possível obter token do Google.");
-        setGoogleLoading(false);
-      }
-    } else if (response?.type === "error") {
-      setErro("Erro ao autenticar com Google.");
-      setGoogleLoading(false);
-    } else if (response?.type === "dismiss") {
-      setGoogleLoading(false);
-    }
-  }, [response]);
+  // Modal recuperação de senha
+  const [modalAberto, setModalAberto] = useState(false);
+  const [passo, setPasso] = useState(1);
+  const [emailRecuperacao, setEmailRecuperacao] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [loadingModal, setLoadingModal] = useState(false);
+  const [erroModal, setErroModal] = useState("");
 
   async function handleLogin() {
     if (!email || !senha) {
       setErro("Preencha email e senha.");
       return;
     }
-
     setErro("");
     setLoading(true);
-
     try {
       await login(email, senha);
       setLogado(true);
@@ -80,16 +49,56 @@ export default function LoginScreen({ navigation }) {
     }
   }
 
-  async function handleGoogleLogin(accessToken) {
-    setErro("");
-    setGoogleLoading(true);
+  function abrirModal() {
+    setEmailRecuperacao("");
+    setCodigo("");
+    setNovaSenha("");
+    setConfirmarSenha("");
+    setErroModal("");
+    setPasso(1);
+    setModalAberto(true);
+  }
+
+  async function handleEnviarCodigo() {
+    if (!emailRecuperacao) {
+      setErroModal("Digite seu email.");
+      return;
+    }
+    setLoadingModal(true);
+    setErroModal("");
     try {
-      await loginComGoogle(accessToken);
-      setLogado(true);
+      await esqueceuSenha(emailRecuperacao);
+      setPasso(2);
     } catch (error) {
-      setErro(error.message || "Erro ao fazer login com Google");
+      setErroModal(error.message || "Erro ao enviar código");
     } finally {
-      setGoogleLoading(false);
+      setLoadingModal(false);
+    }
+  }
+
+  async function handleRedefinirSenha() {
+    if (!codigo || !novaSenha || !confirmarSenha) {
+      setErroModal("Preencha todos os campos.");
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      setErroModal("As senhas não coincidem.");
+      return;
+    }
+    if (novaSenha.length < 6) {
+      setErroModal("Senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setLoadingModal(true);
+    setErroModal("");
+    try {
+      await redefinirSenha(emailRecuperacao, codigo, novaSenha);
+      setModalAberto(false);
+      Alert.alert("Senha redefinida!", "Faça login com sua nova senha.");
+    } catch (error) {
+      setErroModal(error.message || "Erro ao redefinir senha");
+    } finally {
+      setLoadingModal(false);
     }
   }
 
@@ -99,14 +108,12 @@ export default function LoginScreen({ navigation }) {
         behavior={Platform.OS === "android" ? "padding" : "height"}
         style={styles.inner}
       >
-        {/* Logo */}
         <View style={styles.logoArea}>
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
           <Text style={styles.appName}>Notify Home</Text>
           <Text style={styles.appSub}>Controle de despesas domésticas</Text>
         </View>
 
-        {/* Formulário */}
         <View style={styles.form}>
           <Text style={styles.label}>E-mail</Text>
           <TextInput
@@ -141,34 +148,119 @@ export default function LoginScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.btnLink}>
+          <TouchableOpacity style={styles.btnLink} onPress={abrirModal}>
             <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
-          </TouchableOpacity>
-
-          {/* Separador */}
-          <View style={styles.separador}>
-            <View style={styles.separadorLinha} />
-            <Text style={styles.separadorTexto}>ou</Text>
-            <View style={styles.separadorLinha} />
-          </View>
-
-          {/* Botão Google */}
-          <TouchableOpacity
-            style={[styles.btnGoogle, (googleLoading || !request) && styles.btnDesativado]}
-            onPress={() => {
-              setErro("");
-              setGoogleLoading(true);
-              promptAsync();
-            }}
-            disabled={googleLoading || !request}
-          >
-            <MaterialCommunityIcons name="google" size={20} color="#fff" style={styles.googleIcon} />
-            <Text style={styles.btnGoogleText}>
-              {googleLoading ? "Aguardando Google..." : "Entrar com Google"}
-            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Modal Recuperação de Senha */}
+      <Modal
+        visible={modalAberto}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalAberto(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "android" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitulo}>
+                {passo === 1 ? "Esqueci minha senha" : "Redefinir senha"}
+              </Text>
+              <TouchableOpacity onPress={() => setModalAberto(false)}>
+                <Text style={styles.fechar}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {passo === 1 ? (
+              <>
+                <Text style={styles.modalDica}>
+                  Digite seu email e enviaremos um código de 6 dígitos para redefinir sua senha.
+                </Text>
+
+                <Text style={styles.inputLabel}>E-mail</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="seu@email.com"
+                  placeholderTextColor="#A0A0A0"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={emailRecuperacao}
+                  onChangeText={setEmailRecuperacao}
+                />
+
+                {erroModal ? <Text style={styles.erro}>{erroModal}</Text> : null}
+
+                <TouchableOpacity
+                  style={[styles.btnPrimary, loadingModal && styles.btnDesativado]}
+                  onPress={handleEnviarCodigo}
+                  disabled={loadingModal}
+                >
+                  <Text style={styles.btnPrimaryText}>
+                    {loadingModal ? "Enviando..." : "Enviar código"}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalDica}>
+                  Código enviado para {emailRecuperacao}. Verifique sua caixa de entrada.
+                </Text>
+
+                <Text style={styles.inputLabel}>Código (6 dígitos)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="000000"
+                  placeholderTextColor="#A0A0A0"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  value={codigo}
+                  onChangeText={setCodigo}
+                />
+
+                <Text style={styles.inputLabel}>Nova senha</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mínimo 6 caracteres"
+                  placeholderTextColor="#A0A0A0"
+                  secureTextEntry
+                  value={novaSenha}
+                  onChangeText={setNovaSenha}
+                />
+
+                <Text style={styles.inputLabel}>Confirmar nova senha</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Repita a nova senha"
+                  placeholderTextColor="#A0A0A0"
+                  secureTextEntry
+                  value={confirmarSenha}
+                  onChangeText={setConfirmarSenha}
+                />
+
+                {erroModal ? <Text style={styles.erro}>{erroModal}</Text> : null}
+
+                <TouchableOpacity
+                  style={[styles.btnPrimary, loadingModal && styles.btnDesativado]}
+                  onPress={handleRedefinirSenha}
+                  disabled={loadingModal}
+                >
+                  <Text style={styles.btnPrimaryText}>
+                    {loadingModal ? "Redefinindo..." : "Redefinir senha"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.btnLink} onPress={() => setPasso(1)}>
+                  <Text style={styles.btnLinkText}>Reenviar código</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -240,37 +332,6 @@ const styles = StyleSheet.create({
     color: "#0F6E56",
     fontSize: 13,
   },
-  separador: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 16,
-    gap: 10,
-  },
-  separadorLinha: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#D0D0D0",
-  },
-  separadorTexto: {
-    color: "#888",
-    fontSize: 13,
-  },
-  btnGoogle: {
-    backgroundColor: "#4285F4",
-    borderRadius: 10,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  googleIcon: {
-    marginRight: 10,
-  },
-  btnGoogleText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
   erro: {
     color: "#A32D2D",
     fontSize: 13,
@@ -279,5 +340,47 @@ const styles = StyleSheet.create({
   },
   btnDesativado: {
     backgroundColor: "#A8D5C4",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modalTitulo: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1A1A1A",
+  },
+  fechar: {
+    fontSize: 18,
+    color: "#888",
+    paddingHorizontal: 4,
+  },
+  modalDica: {
+    fontSize: 13,
+    color: "#666",
+    backgroundColor: "#F5F5F0",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: "#555",
+    marginBottom: 4,
+    marginTop: 10,
   },
 });

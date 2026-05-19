@@ -24,7 +24,9 @@ async def lifespan(app: FastAPI):
             ALTER TABLE users
             ADD COLUMN IF NOT EXISTS google_id VARCHAR,
             ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
-            ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE
+            ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS reset_code VARCHAR,
+            ADD COLUMN IF NOT EXISTS reset_code_expires TIMESTAMP
         """))
         conn.commit()
     yield

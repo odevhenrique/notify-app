@@ -16,24 +16,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { testarNotificacao } from "../services/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
-import { alterarSenha } from "../services/api";
+import { alterarSenha, criarUsuario } from "../services/api";
 
 export default function PerfilScreen({ navigation }) {
   const [email, setEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [modalSenha, setModalSenha] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [loadingSenha, setLoadingSenha] = useState(false);
   const [erroSenha, setErroSenha] = useState("");
+  const [modalCriarUser, setModalCriarUser] = useState(false);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoEmail, setNovoEmail] = useState("");
+  const [novaSenhaUser, setNovaSenhaUser] = useState("");
+  const [loadingCriarUser, setLoadingCriarUser] = useState(false);
+  const [erroCriarUser, setErroCriarUser] = useState("");
   const { logout } = useAuth();
 
   useEffect(() => {
-    async function carregarEmail() {
+    async function carregarDados() {
       const e = await AsyncStorage.getItem("email");
       if (e) setEmail(e);
+      const admin = await AsyncStorage.getItem("is_admin");
+      setIsAdmin(admin === "true");
     }
-    carregarEmail();
+    carregarDados();
   }, []);
 
   async function handleLogout() {
@@ -81,6 +90,36 @@ export default function PerfilScreen({ navigation }) {
       setErroSenha(error.message || "Erro ao alterar senha.");
     } finally {
       setLoadingSenha(false);
+    }
+  }
+
+  function abrirModalCriarUser() {
+    setNovoNome("");
+    setNovoEmail("");
+    setNovaSenhaUser("");
+    setErroCriarUser("");
+    setModalCriarUser(true);
+  }
+
+  async function handleCriarUsuario() {
+    if (!novoNome || !novoEmail || !novaSenhaUser) {
+      setErroCriarUser("Preencha todos os campos.");
+      return;
+    }
+    if (novaSenhaUser.length < 6) {
+      setErroCriarUser("Senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setLoadingCriarUser(true);
+    setErroCriarUser("");
+    try {
+      await criarUsuario(novoNome, novoEmail, novaSenhaUser);
+      setModalCriarUser(false);
+      Alert.alert("Usuário criado!", `${novoEmail} já pode fazer login.`);
+    } catch (error) {
+      setErroCriarUser(error.message || "Erro ao criar usuário.");
+    } finally {
+      setLoadingCriarUser(false);
     }
   }
 
@@ -161,6 +200,23 @@ export default function PerfilScreen({ navigation }) {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#A32D2D" />
         </TouchableOpacity>
+
+        {isAdmin && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.sectionTitle}>Administração</Text>
+
+            <TouchableOpacity style={styles.menuItem} onPress={abrirModalCriarUser}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.menuIcone, { backgroundColor: "#EBF4FE" }]}>
+                  <Ionicons name="person-add-outline" size={18} color="#185FA5" />
+                </View>
+                <Text style={styles.menuLabel}>Criar usuário</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#888" />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* Bottom Nav */}
@@ -184,6 +240,83 @@ export default function PerfilScreen({ navigation }) {
           <Text style={[styles.navTexto, { color: "#1D9E75" }]}>Perfil</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal Criar Usuário */}
+      <Modal
+        visible={modalCriarUser}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalCriarUser(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "android" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitulo}>Criar usuário</Text>
+              <TouchableOpacity onPress={() => setModalCriarUser(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDica}>
+              O usuário poderá fazer login imediatamente com o email e senha definidos aqui.
+            </Text>
+
+            <Text style={styles.inputLabel}>Nome</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nome do usuário"
+              placeholderTextColor="#A0A0A0"
+              value={novoNome}
+              onChangeText={setNovoNome}
+            />
+
+            <Text style={styles.inputLabel}>E-mail</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="email@exemplo.com"
+              placeholderTextColor="#A0A0A0"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={novoEmail}
+              onChangeText={setNovoEmail}
+            />
+
+            <Text style={styles.inputLabel}>Senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Mínimo 6 caracteres"
+              placeholderTextColor="#A0A0A0"
+              secureTextEntry
+              value={novaSenhaUser}
+              onChangeText={setNovaSenhaUser}
+            />
+
+            {erroCriarUser ? (
+              <Text style={styles.erroTexto}>{erroCriarUser}</Text>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.btnSalvar, loadingCriarUser && styles.btnDesativado]}
+              onPress={handleCriarUsuario}
+              disabled={loadingCriarUser}
+            >
+              <Text style={styles.btnSalvarTexto}>
+                {loadingCriarUser ? "Criando..." : "Criar usuário"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnCancelar}
+              onPress={() => setModalCriarUser(false)}
+            >
+              <Text style={styles.btnCancelarTexto}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Modal Alterar Senha */}
       <Modal

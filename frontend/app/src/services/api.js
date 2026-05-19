@@ -33,6 +33,7 @@ export async function login(email, senha) {
 
     await AsyncStorage.setItem('token', data.access_token)
     if (data.email) await AsyncStorage.setItem('email', data.email)
+    await AsyncStorage.setItem('is_admin', data.is_admin ? 'true' : 'false')
 
     return data
 }
@@ -182,6 +183,27 @@ export async function alterarSenha(senhaAtual, novaSenha) {
 
     if (!response.ok) {
         throw new Error(data.detail || 'Erro ao alterar senha')
+    }
+
+    return data
+}
+
+export async function criarUsuario(name, email, password) {
+    const token = await getToken()
+
+    const response = await fetch(`${BASE_URL}/admin/users`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        throw new Error(data.detail || 'Erro ao criar usuário')
     }
 
     return data

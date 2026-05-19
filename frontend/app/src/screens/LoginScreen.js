@@ -22,11 +22,6 @@ WebBrowser.maybeCompleteAuthSession();
 const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-// Em Expo Go (desenvolvimento) usa o proxy do Expo; em produção usa o scheme nativo
-const redirectUri = __DEV__
-  ? "https://auth.expo.io/@mrpolar777/app"
-  : AuthSession.makeRedirectUri({ scheme: "notifyapp" });
-
 export default function LoginScreen({ navigation }) {
   const { setLogado } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -35,13 +30,19 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    // Em Expo Go: usa webClientId como androidClientId para compatibilidade com o proxy
-    // Em produção: usa o androidClientId nativo com SHA-1
-    androidClientId: __DEV__ ? WEB_CLIENT_ID : ANDROID_CLIENT_ID,
-    webClientId: WEB_CLIENT_ID,
-    redirectUri,
-  });
+  // Expo Go: usa web client com proxy auth.expo.io
+  // Produção: usa android client com reverse-client-id URI (padrão Google nativo)
+  const authConfig = __DEV__
+    ? {
+        androidClientId: WEB_CLIENT_ID,
+        webClientId: WEB_CLIENT_ID,
+        redirectUri: "https://auth.expo.io/@mrpolar777/app",
+      }
+    : {
+        androidClientId: ANDROID_CLIENT_ID,
+      };
+
+  const [request, response, promptAsync] = Google.useAuthRequest(authConfig);
 
   useEffect(() => {
     if (response?.type === "success") {

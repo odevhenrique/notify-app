@@ -3,11 +3,23 @@
     "version": ">= 12.0.0"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "preview": {
       "android": {
         "buildType": "apk"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://notify-app-yqfh.onrender.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "200806181888-uebpe52k6iqtpi8nqh8e1dm7avpiphho.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "200806181888-3gfrun7hsv4q34pd7anl7d3qcho74v1i.apps.googleusercontent.com"
+      }
     },
     "production": {
       "android": {

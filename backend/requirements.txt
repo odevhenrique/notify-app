@@ -1,4 +1,6 @@
 annotated-doc==0.0.4
+httpx==0.28.1
+slowapi==0.1.9
 cloudinary==1.42.1
 annotated-types==0.7.0
 anyio==4.13.0

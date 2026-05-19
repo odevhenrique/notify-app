@@ -5,6 +5,7 @@
   "expo": {
     "name": "Notify Home",
     "slug": "app",
+    "scheme": "notifyapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,7 +26,10 @@
       "supportsTablet": true
     },
     "android": {
-      "permissions": ["NOTIFICATION", "RECEIVE_BOOT_COMPLETED"],
+      "permissions": [
+        "NOTIFICATION",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -43,6 +47,9 @@
         "projectId": "0c9bda33-d3b5-4470-ba57-8524acf0f741"
       }
     },
-    "owner": "mrpolar777"
+    "owner": "mrpolar777",
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

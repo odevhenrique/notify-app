@@ -32,6 +32,7 @@ export async function login(email, senha) {
     }
 
     await AsyncStorage.setItem('token', data.access_token)
+    if (data.email) await AsyncStorage.setItem('email', data.email)
 
     return data
 }
@@ -81,8 +82,6 @@ export async function getDespesas(){
     }
 
     const raw = await response.text()
-    console.log('RAW RESPONSE /expenses/:', response.status, raw)
-
     const data = JSON.parse(raw)
 
     if (!response.ok) {
@@ -130,6 +129,51 @@ export async function deletarDespesa(id) {
     }
 
     return true
+}
+
+// Login com Google (envia access_token obtido pelo expo-auth-session)
+export async function loginComGoogle(accessToken) {
+    const response = await fetch(`${BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ access_token: accessToken }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        throw new Error(data.detail || 'Erro ao fazer login com Google')
+    }
+
+    await AsyncStorage.setItem('token', data.access_token)
+    if (data.email) await AsyncStorage.setItem('email', data.email)
+    return data
+}
+
+export async function alterarSenha(senhaAtual, novaSenha) {
+    const token = await getToken()
+
+    const response = await fetch(`${BASE_URL}/auth/change-password`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            current_password: senhaAtual || null,
+            new_password: novaSenha,
+        }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        throw new Error(data.detail || 'Erro ao alterar senha')
+    }
+
+    return data
 }
 
 export async function acordarApi() {

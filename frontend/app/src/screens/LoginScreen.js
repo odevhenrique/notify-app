@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,18 +9,56 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaViewBase,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { login } from "../services/api";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import * as AuthSession from "expo-auth-session";
+import { login, loginComGoogle } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
+WebBrowser.maybeCompleteAuthSession();
+
+const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+// Em Expo Go (desenvolvimento) usa o proxy do Expo; em produção usa o scheme nativo
+const redirectUri = __DEV__
+  ? "https://auth.expo.io/@mrpolar777/app"
+  : AuthSession.makeRedirectUri({ scheme: "notifyapp" });
+
 export default function LoginScreen({ navigation }) {
-  const { setLogado } = useAuth()
+  const { setLogado } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    // Em Expo Go: usa webClientId como androidClientId para compatibilidade com o proxy
+    // Em produção: usa o androidClientId nativo com SHA-1
+    androidClientId: __DEV__ ? WEB_CLIENT_ID : ANDROID_CLIENT_ID,
+    webClientId: WEB_CLIENT_ID,
+    redirectUri,
+  });
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const accessToken = response.authentication?.accessToken;
+      if (accessToken) {
+        handleGoogleLogin(accessToken);
+      } else {
+        setErro("Não foi possível obter token do Google.");
+        setGoogleLoading(false);
+      }
+    } else if (response?.type === "error") {
+      setErro("Erro ao autenticar com Google.");
+      setGoogleLoading(false);
+    } else if (response?.type === "dismiss") {
+      setGoogleLoading(false);
+    }
+  }, [response]);
 
   async function handleLogin() {
     if (!email || !senha) {
@@ -33,11 +71,24 @@ export default function LoginScreen({ navigation }) {
 
     try {
       await login(email, senha);
-      setLogado(true)
+      setLogado(true);
     } catch (error) {
       setErro(error.message || "Erro ao fazer login");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin(accessToken) {
+    setErro("");
+    setGoogleLoading(true);
+    try {
+      await loginComGoogle(accessToken);
+      setLogado(true);
+    } catch (error) {
+      setErro(error.message || "Erro ao fazer login com Google");
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -49,7 +100,7 @@ export default function LoginScreen({ navigation }) {
       >
         {/* Logo */}
         <View style={styles.logoArea}>
-          <Image source={require('../../assets/logo.png')} style={styles.logo}/>
+          <Image source={require("../../assets/logo.png")} style={styles.logo} />
           <Text style={styles.appName}>Notify Home</Text>
           <Text style={styles.appSub}>Controle de despesas domésticas</Text>
         </View>
@@ -92,6 +143,29 @@ export default function LoginScreen({ navigation }) {
           <TouchableOpacity style={styles.btnLink}>
             <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
           </TouchableOpacity>
+
+          {/* Separador */}
+          <View style={styles.separador}>
+            <View style={styles.separadorLinha} />
+            <Text style={styles.separadorTexto}>ou</Text>
+            <View style={styles.separadorLinha} />
+          </View>
+
+          {/* Botão Google */}
+          <TouchableOpacity
+            style={[styles.btnGoogle, (googleLoading || !request) && styles.btnDesativado]}
+            onPress={() => {
+              setErro("");
+              setGoogleLoading(true);
+              promptAsync();
+            }}
+            disabled={googleLoading || !request}
+          >
+            <MaterialCommunityIcons name="google" size={20} color="#fff" style={styles.googleIcon} />
+            <Text style={styles.btnGoogleText}>
+              {googleLoading ? "Aguardando Google..." : "Entrar com Google"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -110,16 +184,11 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 100,
-    height: 100
+    height: 100,
   },
   logoArea: {
     alignItems: "center",
     marginBottom: 40,
-  },
-  logoIcon: {
-    fontSize: 28,
-    color: "#fff",
-    fontWeight: "bold",
   },
   appName: {
     fontSize: 24,
@@ -170,18 +239,35 @@ const styles = StyleSheet.create({
     color: "#0F6E56",
     fontSize: 13,
   },
-  registerRow: {
+  separador: {
     flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 8,
+    alignItems: "center",
+    marginVertical: 16,
+    gap: 10,
   },
-  registerText: {
-    fontSize: 13,
+  separadorLinha: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#D0D0D0",
+  },
+  separadorTexto: {
     color: "#888",
-  },
-  registerLink: {
     fontSize: 13,
-    color: "#0F6E56",
+  },
+  btnGoogle: {
+    backgroundColor: "#4285F4",
+    borderRadius: 10,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  btnGoogleText: {
+    color: "#fff",
+    fontSize: 15,
     fontWeight: "600",
   },
   erro: {

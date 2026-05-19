@@ -24,6 +24,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         if user is None:
             raise HTTPException(status_code=401, detail="Usuário não encontrado")
 
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Conta desativada pelo administrador")
+
         return user
           
     except JWTError:

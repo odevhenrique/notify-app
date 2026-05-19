@@ -2,19 +2,31 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { testarNotificacao } from "../services/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
+import { alterarSenha } from "../services/api";
 
 export default function PerfilScreen({ navigation }) {
   const [email, setEmail] = useState("");
-  const { logout } = useAuth()
+  const [modalSenha, setModalSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [loadingSenha, setLoadingSenha] = useState(false);
+  const [erroSenha, setErroSenha] = useState("");
+  const { logout } = useAuth();
 
   useEffect(() => {
     async function carregarEmail() {
@@ -31,10 +43,45 @@ export default function PerfilScreen({ navigation }) {
         text: "Sair",
         style: "destructive",
         onPress: async () => {
-          await logout()
+          await logout();
         },
       },
     ]);
+  }
+
+  function abrirModalSenha() {
+    setSenhaAtual("");
+    setNovaSenha("");
+    setConfirmarSenha("");
+    setErroSenha("");
+    setModalSenha(true);
+  }
+
+  async function handleAlterarSenha() {
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+      setErroSenha("Preencha todos os campos.");
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      setErroSenha("As novas senhas não coincidem.");
+      return;
+    }
+    if (novaSenha.length < 6) {
+      setErroSenha("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setLoadingSenha(true);
+    setErroSenha("");
+    try {
+      await alterarSenha(senhaAtual, novaSenha);
+      setModalSenha(false);
+      Alert.alert("Sucesso", "Senha alterada com sucesso!");
+    } catch (error) {
+      setErroSenha(error.message || "Erro ao alterar senha.");
+    } finally {
+      setLoadingSenha(false);
+    }
   }
 
   const iniciais = email ? email.slice(0, 2).toUpperCase() : "?";
@@ -59,11 +106,7 @@ export default function PerfilScreen({ navigation }) {
         >
           <View style={styles.menuLeft}>
             <View style={[styles.menuIcone, { backgroundColor: "#FAEEDA" }]}>
-              <Ionicons
-                name="notifications-outline"
-                size={18}
-                color="#854F0B"
-              />
+              <Ionicons name="notifications-outline" size={18} color="#854F0B" />
             </View>
             <Text style={styles.menuLabel}>Notificações</Text>
           </View>
@@ -77,10 +120,9 @@ export default function PerfilScreen({ navigation }) {
               await testarNotificacao();
               Alert.alert(
                 "✅ Agendado!",
-                "Feche o app e aguarde 10 segundos — a notificação vai aparecer!",
+                "Feche o app e aguarde 10 segundos — a notificação vai aparecer!"
               );
             } catch (error) {
-              console.log("Erro:", error.message);
               Alert.alert("Erro", error.message);
             }
           }}
@@ -97,6 +139,16 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.divider} />
 
         <Text style={styles.sectionTitle}>Conta</Text>
+
+        <TouchableOpacity style={styles.menuItem} onPress={abrirModalSenha}>
+          <View style={styles.menuLeft}>
+            <View style={[styles.menuIcone, { backgroundColor: "#EBF4FE" }]}>
+              <Ionicons name="lock-closed-outline" size={18} color="#1A5FAD" />
+            </View>
+            <Text style={styles.menuLabel}>Alterar senha</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#888" />
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
           <View style={styles.menuLeft}>
@@ -132,6 +184,83 @@ export default function PerfilScreen({ navigation }) {
           <Text style={[styles.navTexto, { color: "#1D9E75" }]}>Perfil</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal Alterar Senha */}
+      <Modal
+        visible={modalSenha}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalSenha(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "android" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitulo}>Alterar Senha</Text>
+              <TouchableOpacity onPress={() => setModalSenha(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDica}>
+              Sua senha inicial foi enviada por email no primeiro acesso.
+            </Text>
+
+            <Text style={styles.inputLabel}>Senha atual</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite sua senha atual"
+              placeholderTextColor="#A0A0A0"
+              secureTextEntry
+              value={senhaAtual}
+              onChangeText={setSenhaAtual}
+            />
+
+            <Text style={styles.inputLabel}>Nova senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Mínimo 6 caracteres"
+              placeholderTextColor="#A0A0A0"
+              secureTextEntry
+              value={novaSenha}
+              onChangeText={setNovaSenha}
+            />
+
+            <Text style={styles.inputLabel}>Confirmar nova senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Repita a nova senha"
+              placeholderTextColor="#A0A0A0"
+              secureTextEntry
+              value={confirmarSenha}
+              onChangeText={setConfirmarSenha}
+            />
+
+            {erroSenha ? (
+              <Text style={styles.erroTexto}>{erroSenha}</Text>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.btnSalvar, loadingSenha && styles.btnDesativado]}
+              onPress={handleAlterarSenha}
+              disabled={loadingSenha}
+            >
+              <Text style={styles.btnSalvarTexto}>
+                {loadingSenha ? "Salvando..." : "Salvar"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnCancelar}
+              onPress={() => setModalSenha(false)}
+            >
+              <Text style={styles.btnCancelarTexto}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -196,4 +325,66 @@ const styles = StyleSheet.create({
   },
   navItem: { alignItems: "center", gap: 2 },
   navTexto: { fontSize: 10, color: "#888" },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    paddingBottom: 36,
+    marginHorizontal: 0,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modalTitulo: { fontSize: 17, fontWeight: "700", color: "#1A1A1A" },
+  modalDica: {
+    fontSize: 13,
+    color: "#666",
+    backgroundColor: "#F5F5F0",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  inputLabel: { fontSize: 13, color: "#555", marginBottom: 4, marginTop: 10 },
+  input: {
+    backgroundColor: "#F5F5F0",
+    borderWidth: 0.5,
+    borderColor: "#D0D0D0",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: "#1A1A1A",
+  },
+  erroTexto: {
+    color: "#A32D2D",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 10,
+  },
+  btnSalvar: {
+    backgroundColor: "#1D9E75",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  btnSalvarTexto: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  btnCancelar: {
+    alignItems: "center",
+    marginTop: 12,
+    paddingVertical: 10,
+  },
+  btnCancelarTexto: { color: "#888", fontSize: 14 },
+  btnDesativado: { backgroundColor: "#A8D5C4" },
 });

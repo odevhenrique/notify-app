@@ -5,6 +5,8 @@ from app.database.connection import get_db
 from app.models.allowed_email import AllowedEmail
 from app.models.user import User
 from app.core.deps import get_current_user
+from app.core.security import hash_password
+from app.schemas.user import CreateUserRequest
 
 router = APIRouter()
 
@@ -88,3 +90,23 @@ def activate_user(user_id: int, db: Session = Depends(get_db), _: User = Depends
     user.is_active = True
     db.commit()
     return {"message": f"Usuário {user.email} ativado"}
+
+
+@router.post("/users")
+def create_user(body: CreateUserRequest, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    existing = db.query(User).filter(User.email == body.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já está em uso")
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres")
+    new_user = User(
+        name=body.name,
+        email=body.email,
+        password=hash_password(body.password),
+        is_active=True,
+        is_admin=False,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": f"Usuário {body.email} criado com sucesso", "id": new_user.id}

@@ -34,6 +34,7 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
         "token_type": "bearer",
         "email": db_user.email,
         "name": db_user.name,
+        "is_admin": db_user.is_admin,
     }
 
 

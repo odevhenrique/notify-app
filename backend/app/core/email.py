@@ -1,30 +1,25 @@
-import smtplib
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 
 
 def send_email(to_email: str, subject: str, html_body: str):
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    email_from = os.getenv("EMAIL_FROM", smtp_user)
+    api_key = os.getenv("RESEND_API_KEY")
+    email_from = os.getenv("EMAIL_FROM", "Notify Home <onboarding@resend.dev>")
 
-    if not all([smtp_host, smtp_user, smtp_password]):
-        return  # Email não configurado — ignora silenciosamente
+    if not api_key:
+        return
 
-    msg = MIMEMultipart("alternative")
-    msg["From"] = email_from
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html_body, "html"))
-
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
+    httpx.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "from": email_from,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_body,
+        },
+        timeout=15,
+    ).raise_for_status()
 
 
 def email_reset_senha(name: str, code: str) -> str:

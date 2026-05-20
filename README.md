@@ -90,6 +90,10 @@ source venv/bin/activate
 * POST /expenses
 * PATCH /expenses/{id}
 
+## Download
+
+[Baixar APK (Android)](https://expo.dev/artifacts/eas/poo3Wr8gitfPKE2dt8Yg6N.apk)
+
 ## Status do projeto
 
 Em desenvolvimento

@@ -1,6 +1,7 @@
 import os
 import secrets
 import string
+import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -60,8 +61,8 @@ def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session =
             "Notify Home — Código de recuperação de senha",
             email_reset_senha(user.name or "Usuário", code),
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logging.error(f"Erro ao enviar email de recuperação: {e}")
 
     return resposta
 

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notify Home — Controle de despesas domésticas</title>
+  <meta name="description" content="Organize as contas da sua casa, receba lembretes antes do vencimento e nunca mais pague juros por esquecimento." />
+  <link rel="icon" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --verde: #1D9E75;
+      --verde-escuro: #0F6E56;
+      --verde-claro: #E4F3EC;
+      --fundo: #F5F5F0;
+      --superficie: #FFFFFF;
+      --texto: #1A1A1A;
+      --texto-suave: #5B5B54;
+      --borda: #E3E1D8;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --verde: #2FBE8E;
+        --verde-escuro: #7FE0BE;
+        --verde-claro: #163229;
+        --fundo: #111310;
+        --superficie: #191C18;
+        --texto: #F2F1EA;
+        --texto-suave: #ABA99E;
+        --borda: #2A2D27;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --verde: #2FBE8E;
+      --verde-escuro: #7FE0BE;
+      --verde-claro: #163229;
+      --fundo: #111310;
+      --superficie: #191C18;
+      --texto: #F2F1EA;
+      --texto-suave: #ABA99E;
+      --borda: #2A2D27;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--fundo);
+      color: var(--texto);
+      font-family: "Inter", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .pagina {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 40px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+
+    .topo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 84px;
+      height: 84px;
+      border-radius: 22px;
+      box-shadow: 0 8px 24px rgba(15, 110, 86, 0.18);
+    }
+
+    .nome {
+      font-family: "Fredoka", "Inter", sans-serif;
+      font-weight: 600;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      margin: 0;
+      text-wrap: balance;
+    }
+
+    .slogan {
+      color: var(--texto-suave);
+      font-size: 15px;
+      line-height: 1.5;
+      margin: 0;
+      max-width: 34ch;
+      text-wrap: balance;
+    }
+
+    .cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .botao-baixar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: var(--verde);
+      color: #fff;
+      font-family: "Inter", sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      padding: 16px 20px;
+      border-radius: 14px;
+      box-shadow: 0 10px 24px rgba(29, 158, 117, 0.28);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .botao-baixar:active {
+      transform: scale(0.98);
+      box-shadow: 0 6px 16px rgba(29, 158, 117, 0.24);
+    }
+
+    .botao-baixar svg { flex-shrink: 0; }
+
+    .cta-nota {
+      font-size: 12.5px;
+      color: var(--texto-suave);
+      text-align: center;
+      line-height: 1.5;
+      max-width: 32ch;
+    }
+
+    .cartao {
+      background: var(--superficie);
+      border: 1px solid var(--borda);
+      border-radius: 18px;
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cartao-titulo {
+      font-family: "Fredoka", "Inter", sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--texto-suave);
+      margin: 0;
+    }
+
+    .lista-recursos {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .recurso {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .recurso-icone {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--verde-claro);
+      color: var(--verde-escuro);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .recurso-texto strong {
+      display: block;
+      font-size: 14.5px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .recurso-texto span {
+      display: block;
+      font-size: 13px;
+      color: var(--texto-suave);
+      line-height: 1.4;
+    }
+
+    .rodape {
+      text-align: center;
+      font-size: 12px;
+      color: var(--texto-suave);
+      padding-top: 4px;
+    }
+
+    .rodape a {
+      color: var(--verde-escuro);
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="pagina">
+    <div class="topo">
+      <img class="logo" src="logo.png" alt="Logo do Notify Home" />
+      <h1 class="nome">Notify Home</h1>
+      <p class="slogan">Organize as contas da sua casa e nunca mais esqueça um vencimento.</p>
+    </div>
+
+    <div class="cta">
+      <a class="botao-baixar" href="https://expo.dev/artifacts/eas/TVujyh3hI_0kvaoTAVSHX8TSUQ9tOODVsutAg4BR5VE.apk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.6 9.48 19.1 6.8a.4.4 0 0 0-.7-.4l-1.5 2.7a8.9 8.9 0 0 0-7.8 0L7.6 6.4a.4.4 0 1 0-.7.4l1.5 2.68A8.6 8.6 0 0 0 4 17h16a8.6 8.6 0 0 0-2.4-7.52ZM9 14.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" fill="currentColor"/>
+        </svg>
+        Baixar para Android (APK)
+      </a>
+      <p class="cta-nota">Versão para Android · grátis · ao instalar, permita "fontes desconhecidas" quando o sistema pedir. iOS em breve.</p>
+    </div>
+
+    <div class="cartao">
+      <p class="cartao-titulo">O que o app faz</p>
+      <ul class="lista-recursos">
+        <li class="recurso">
+          <div class="recurso-icone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="recurso-texto">
+            <strong>Cadastre suas contas</strong>
+            <span>Aluguel, energia, internet — tudo num só lugar, com valor e data de vencimento.</span>
+          </div>
+        </li>
+        <li class="recurso">
+          <div class="recurso-icone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l3 2M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="recurso-texto">
+            <strong>Lembretes antes do vencimento</strong>
+            <span>Notificações no horário que você escolher, direto no celular.</span>
+          </div>
+        </li>
+        <li class="recurso">
+          <div class="recurso-icone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="recurso-texto">
+            <strong>Comprovante de pagamento</strong>
+            <span>Anexe a foto ou print do comprovante ao marcar uma conta como paga.</span>
+          </div>
+        </li>
+        <li class="recurso">
+          <div class="recurso-icone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="recurso-texto">
+            <strong>Histórico organizado</strong>
+            <span>Contas pagas ficam arquivadas, sempre disponíveis para consulta.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <p class="rodape">Feito por <a href="https://github.com/odevhenrique" target="_blank" rel="noopener">Henrique Costa</a> · Notify Home</p>
+  </div>
+</body>
+</html>

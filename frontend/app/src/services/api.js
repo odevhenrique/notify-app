@@ -38,6 +38,33 @@ export async function login(email, senha) {
     return data
 }
 
+// Cadastro
+export async function cadastrar(name, email, senha) {
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password: senha }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        const detail = data.detail
+        if (Array.isArray(detail)) {
+            throw new Error(detail.map(d => d.msg).join(', '))
+        }
+        throw new Error(detail || 'Erro ao criar conta')
+    }
+
+    await AsyncStorage.setItem('token', data.access_token)
+    if (data.email) await AsyncStorage.setItem('email', data.email)
+    await AsyncStorage.setItem('is_admin', data.is_admin ? 'true' : 'false')
+
+    return data
+}
+
 // Criar uma conta a pagar
 export async function criarDespesa(title, amount, due_date) {
     const token = await getToken()

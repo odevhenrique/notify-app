@@ -8,12 +8,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   Image,
   Modal,
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Alert from "../utils/alert";
 import {
   criarDespesa,
   getDespesas,

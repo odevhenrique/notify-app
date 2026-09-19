@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
   Modal,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Alert from "../utils/alert";
 import { testarNotificacao } from "../services/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";

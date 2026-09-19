@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import Alert from '../utils/alert';
 
 const OPCOES_DIAS = [1, 2, 3, 5, 7];
 const OPCOES_HORARIO = ['07:00', '08:00', '09:00', '12:00', '18:00', '20:00'];

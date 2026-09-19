@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoginScreen from "../screens/LoginScreen";
+import CadastroScreen from "../screens/CadastroScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import NovaDespesaScreen from "../screens/NovaDespesaScreen"
 import PerfilScreen from "../screens/PerfilScreen";
@@ -36,7 +37,10 @@ export default function AppNavigator(){
                         <Stack.Screen name="Arquivados" component={ArquivadosScreen} />
                     </>
                 ) : (
-                    <Stack.Screen name="Login" component={LoginScreen}/>
+                    <>
+                        <Stack.Screen name="Login" component={LoginScreen}/>
+                        <Stack.Screen name="Cadastro" component={CadastroScreen}/>
+                    </>
                 )}
             </Stack.Navigator>
         </NavigationContainer>

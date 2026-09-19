@@ -10,12 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-  Alert,
 } from "react-native";
+import Alert from "../utils/alert";
 import { login, esqueceuSenha, redefinirSenha } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const { setLogado } = useAuth();
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
@@ -150,6 +150,10 @@ export default function LoginScreen() {
 
           <TouchableOpacity style={styles.btnLink} onPress={abrirModal}>
             <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.btnLink} onPress={() => navigation.navigate("Cadastro")}>
+            <Text style={styles.btnLinkText}>Não tem conta? Cadastre-se</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

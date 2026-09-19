@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   Image,
   Modal,
   TextInput,
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Alert from "../utils/alert";
 import { getDespesas, deletarDespesa, getComprovante } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 

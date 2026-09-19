@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Alert from "../utils/alert";
 import { criarDespesa } from "../services/api";
 import { agendarNotificacaoDespesa } from "../services/notifications";
 

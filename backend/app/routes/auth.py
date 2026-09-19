@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from app.database.connection import get_db
-from app.schemas.user import ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest
+from app.schemas.user import ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest, CreateUserRequest
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.core.security import hash_password, verify_password, create_access_token
@@ -15,6 +15,37 @@ from app.core.limiter import limiter
 from app.core.email import send_email, email_reset_senha
 
 router = APIRouter()
+
+
+@router.post("/register")
+@limiter.limit("5/minute")
+def register(request: Request, body: CreateUserRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == body.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já está em uso")
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres")
+
+    new_user = User(
+        name=body.name,
+        email=body.email,
+        password=hash_password(body.password),
+        is_active=True,
+        is_admin=False,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    access_token = create_access_token(data={"sub": new_user.email})
+    return {
+        "message": "Conta criada com sucesso",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "email": new_user.email,
+        "name": new_user.name,
+        "is_admin": new_user.is_admin,
+    }
 
 
 @router.post("/login")
